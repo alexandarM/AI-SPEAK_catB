@@ -205,3 +205,29 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Project-specific ignores
+# datasets & large files
+data/
+datasets/
+
+# outputs & results
+outputs/
+results/
+checkpoints/
+
+# audio files
+*.wav
+*.mp3
+*.flac
+*.ogg
+
+# model files
+*.pt
+*.pth
+*.ckpt
+*.onnx
+
+# CSV predictions (optional)
+predictions/
+
