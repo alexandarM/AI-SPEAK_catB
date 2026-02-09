@@ -231,3 +231,11 @@ checkpoints/
 # CSV predictions (optional)
 predictions/
 
+# Ignore downloaded zips
+/data/*.zip
+
+# Ignore extracted folders
+/data/spk14_blendshapes/
+data/spk08_blendshapes/
+data/labels_aligned/
+data/audio_synth/
