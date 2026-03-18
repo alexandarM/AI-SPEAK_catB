@@ -4,7 +4,7 @@ from pathlib import Path
 import gdown
 
 BASE_DIR = Path("data")  
-# BASE_DIR.mkdir(parents=True, exist_ok=True)
+BASE_DIR.mkdir(parents=True, exist_ok=True)
 
 files = {
     "spk14_blendshapes.zip": "1AqENkQjMEC4BLUVaaXIueK4q-KwQyD7S",
@@ -28,3 +28,10 @@ for filename, file_id in files.items():
             zip_ref.extractall(extract_path)
 
 print("Download and unzip finished!")
+print('\nFolder structure:')
+for root, dirs, files_ in os.walk(BASE_DIR):
+    depth = str(root).replace(str(BASE_DIR), '').count(os.sep)
+    if depth > 3: continue
+    n = len(files_)
+    label = f'  [{n} files]' if n > 0 and depth >= 2 else ''
+    print('  ' * depth + os.path.basename(root) + '/' + label)
