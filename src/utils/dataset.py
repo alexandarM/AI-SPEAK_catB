@@ -14,7 +14,7 @@ class BlendshapeDataset(Dataset):
         self.samples = []
         self.speaker_to_idx = {spk: i for i, spk in enumerate(speakers)}
         
-        # real speach
+        # ── Real speech — always loaded ────────────────────────────────
         for spk in speakers:
             bs_folder = os.path.join(data_root, f"{spk}_blendshapes", f"renamed_{spk}")
             if not os.path.isdir(bs_folder):
@@ -28,33 +28,32 @@ class BlendshapeDataset(Dataset):
                     data_root, "labels_aligned", "labels_aligned", "per_phoneme", base + ".txt"
                 )
                 self.samples.append({
-                    "csv_path": csv_path, 
-                    "wav_path": wav_path,
-                    "ph_path": ph_path if os.path.isfile(ph_path) else None,
-                    "speaker_id": self.speaker_to_idx[spk], 
-                    "name": base,
-                    "is_synth": False,
+                    "csv_path":   csv_path,
+                    "wav_path":   wav_path,
+                    "ph_path":    ph_path if os.path.isfile(ph_path) else None,
+                    "speaker_id": self.speaker_to_idx[spk],
+                    "name":       base,
+                    "is_synth":   False,
                 })
-        
-        # synth speech
+
+        # ── Synthetic speech — optional ────────────────────────────────
         if load_synth:
             synth_audio_dir = os.path.join(data_root, "audio_synth", "synth")
-
             if not os.path.isdir(synth_audio_dir):
                 print(f"[WARN] Synth folder not found: {synth_audio_dir}")
             else:
                 for wav_path in sorted(glob.glob(os.path.join(synth_audio_dir, "*.wav"))):
                     base = os.path.splitext(os.path.basename(wav_path))[0]
                     self.samples.append({
-                        "csv_path": None,
-                        "wav_path": wav_path,
-                        "ph_path": None,
+                        "csv_path":   None,
+                        "wav_path":   wav_path,
+                        "ph_path":    None,
                         "speaker_id": -1,
-                        "name": base,
-                        "is_synth": True
-                    })                
-        
-        real = sum(1 for s in self.samples if not s["is_synth"])
+                        "name":       base,
+                        "is_synth":   True,
+                    })
+
+        real  = sum(1 for s in self.samples if not s["is_synth"])
         synth = sum(1 for s in self.samples if s["is_synth"])
         print(f"[Dataset] {real} real + {synth} synth = {len(self.samples)} total samples")
 
@@ -95,6 +94,7 @@ class BlendshapeDataset(Dataset):
 
 def collate_fn_mfcc(batch):
     lengths = torch.tensor([s["length"] for s in batch], dtype=torch.long)
+    is_synth = torch.tensor([s["is_synth"] for s in batch], dtype=torch.bool)
     T_max, B = lengths.max().item(), len(batch)
 
     mfcc = torch.zeros(B, T_max, FEAT_DIM)
@@ -103,7 +103,6 @@ def collate_fn_mfcc(batch):
     si = torch.zeros(B, T_max, dtype=torch.long)
     tg = torch.zeros(B, T_max, N_BLENDSHAPES)
     mk = torch.zeros(B, T_max, dtype=torch.bool)
-    is_synth = torch.zeros(B, dtype=torch.bool)
 
     for i, s in enumerate(batch):
         T = s["length"]
@@ -113,7 +112,6 @@ def collate_fn_mfcc(batch):
         si[i,:T] = s["speaker_ids"]
         tg[i,:T] = s["targets"] 
         mk[i,:T] = True
-        is_synth[i] = s["is_synth"]
 
     return {"audio_feats":mfcc,"phoneme_ids":pi,"phoneme_trel":pt,
             "speaker_ids":si,"targets":tg,"lengths":lengths,"mask":mk, "is_synth": is_synth}
