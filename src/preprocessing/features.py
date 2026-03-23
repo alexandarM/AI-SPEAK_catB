@@ -64,9 +64,11 @@ def spec_augment(feats, freq_mask=15, time_mask=30, n_freq=2, n_time=2):
     feats = feats.copy()
     T, F = feats.shape
     for _ in range(n_freq):
-        f = np.random.randint(0, freq_mask); f0 = np.random.randint(0, max(1, F-f))
+        f = np.random.randint(0, freq_mask)
+        f0 = np.random.randint(0, max(1, F-f))
         feats[:, f0:f0+f] = 0
     for _ in range(n_time):
-        t = np.random.randint(0, time_mask); t0 = np.random.randint(0, max(1, T-t))
+        t = np.random.randint(0, time_mask)
+        t0 = np.random.randint(0, max(1, T-t))
         feats[t0:t0+t, :] = 0
     return feats

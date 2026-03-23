@@ -8,7 +8,7 @@ from src.config import BLENDSHAPE_NAMES, N_BLENDSHAPES, FEAT_DIM
 from src.preprocessing.features import extract_audio_features, load_blendshapes, load_phoneme_alignment, phoneme_segments_to_frames, spec_augment
 
 class BlendshapeDataset(Dataset):
-    def __init__(self, data_root, speakers=["spk08","spk14"], augment=False, load_synth=True, use_preprocessing=True):
+    def __init__(self, data_root, speakers=["spk08","spk14"], augment=False, load_synth=False, use_preprocessing=True):
         self.augment = augment
         self.use_preprocessing = use_preprocessing
         self.samples = []
