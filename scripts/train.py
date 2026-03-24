@@ -43,7 +43,7 @@ from src.utils.Visualization.results_manager import ResultsManager
 
 
 def _build_model(model_type: str, audio_type: str, device: str, **kwargs):
-    "# inicijalizuje odgovarajuci model
+    # inicijalizuje odgovarajuci model
     common = dict(audio_type=audio_type)
     common.update(kwargs)
 
