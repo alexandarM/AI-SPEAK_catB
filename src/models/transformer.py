@@ -18,11 +18,12 @@ class PositionalEncoding(nn.Module):
 
 class BlendshapeTransformer(nn.Module):
     def __init__(self, d_model=256, n_heads=8, n_layers=4, ffn_dim=512, dropout=0.1,
-                 past_frames=30, future_frames=12, n_speakers=2):
+                 past_frames=30, future_frames=12, n_speakers=2, audio_type="mfcc", use_phonemes=True):
         super().__init__()
         self.past_frames = past_frames
         self.future_frames = future_frames
-        self.encoder = InputEncoder(d_model=d_model, n_speakers=n_speakers, dropout=dropout)
+        self.encoder = InputEncoder(d_model=d_model, n_speakers=n_speakers, dropout=dropout,
+                                    audio_type=audio_type, use_phonemes=use_phonemes)
         self.pos_enc  = PositionalEncoding(d_model, dropout=dropout)
         layer = nn.TransformerEncoderLayer(d_model, n_heads, ffn_dim, dropout,
                                            batch_first=True, norm_first=True)
