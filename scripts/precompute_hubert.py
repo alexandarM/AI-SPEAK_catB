@@ -45,3 +45,6 @@ def precompute_hubert(
             np.savez_compressed(str(out), hubert=hubert_f)
 
     print(f'Gotovo -- {len(list(FEATS_DIR.glob("*.npz")))} fajlova u {FEATS_DIR}')
+
+if __name__ == "__main__":
+    precompute_hubert()
