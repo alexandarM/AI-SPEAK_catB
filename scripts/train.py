@@ -28,6 +28,7 @@ Training loop za BlendshapeGRU / BlendshapeTCN / BlendshapeTransformer.
 """
 
 import os
+import argparse
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, random_split
@@ -64,7 +65,8 @@ def _build_model(model_type: str, audio_type: str, device: str, **kwargs):
     return model.to(device)
 
 
-def _run_epoch(model, loader, optimizer, device, audio_type, is_train):
+def _run_epoch(model, loader, optimizer, device, audio_type, is_train,
+               vel_lam=0.5, acc_lam=0.1):
     # jedna epoha - train/val
     model.train() if is_train else model.eval()
 
@@ -89,7 +91,7 @@ def _run_epoch(model, loader, optimizer, device, audio_type, is_train):
 
             pred = model(af, pi, pt, si, lengths=lengths, hubert=hubert)  # (B, T, 52)
 
-            loss, components = combined_loss(pred, targets, mask)
+            loss, components = combined_loss(pred, targets, mask, vel_lam=vel_lam, acc_lam=acc_lam)
 
             if is_train:
                 optimizer.zero_grad()
@@ -140,6 +142,10 @@ def train(
     results_root: str   = "/content/results",
     ckpt_every:   int   = 5,           # cuva checkpoint svakih N epoha
     display_inline: bool = True,
+
+    # Tezine gubitka
+    vel_lam:      float = 0.5,
+    acc_lam:      float = 0.1,
 ) -> str:
     """
     Trenira model i cuva rezultate u /content/results/<model>_<timestamp>/.
@@ -232,8 +238,8 @@ def train(
 
     for epoch in range(1, epochs + 1):
 
-        train_metrics = _run_epoch(model, train_loader, optimizer, device, audio_type, is_train=True)
-        val_metrics   = _run_epoch(model, val_loader, optimizer, device, audio_type, is_train=False)
+        train_metrics = _run_epoch(model, train_loader, optimizer, device, audio_type, is_train=True,  vel_lam=vel_lam, acc_lam=acc_lam)
+        val_metrics   = _run_epoch(model, val_loader,   optimizer, device, audio_type, is_train=False, vel_lam=vel_lam, acc_lam=acc_lam)
 
         scheduler.step(val_metrics["loss"])
         rm.log_epoch(epoch, train=train_metrics, val=val_metrics)
@@ -269,6 +275,9 @@ def train(
                     "audio_type":   audio_type,
                     "d_model":      d_model,
                     "use_phonemes": use_phonemes,
+                    "speakers":     speakers,
+                    "vel_lam":      vel_lam,
+                    "acc_lam":      acc_lam,
                 },
             }, best_ckpt_path)
             patience_count = 0
@@ -333,3 +342,67 @@ def train(
     print(f"[Train] Rezultati     : {session_path}")
 
     return session_path
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Train blendshape prediction model.")
+
+    # Model
+    parser.add_argument("--model",        type=str,   default="gru",
+                        choices=["gru", "tcn", "transformer"])
+    parser.add_argument("--audio",        type=str,   default="mfcc",
+                        choices=["mfcc", "hubert"])
+    parser.add_argument("--d_model",      type=int,   default=256)
+    parser.add_argument("--no_phonemes",  action="store_true", default=False,
+                        help="Disable phoneme features")
+
+    # Data
+    parser.add_argument("--data_root",    type=str,   default="data")
+    parser.add_argument("--results_root", type=str,   default="/content/results")
+    parser.add_argument("--hubert_dir",   type=str,   default=None)
+    parser.add_argument("--speakers",     type=str,   nargs="+", default=["spk08", "spk14"])
+    parser.add_argument("--use_synthetic",action="store_true", default=False)
+    parser.add_argument("--no_augment",   action="store_true", default=False,
+                        help="Disable data augmentation")
+
+    # Training
+    parser.add_argument("--epochs",           type=int,   default=50)
+    parser.add_argument("--batch_size",       type=int,   default=4)
+    parser.add_argument("--lr",               type=float, default=1e-3)
+    parser.add_argument("--weight_decay",     type=float, default=1e-4)
+    parser.add_argument("--patience",         type=int,   default=10)
+    parser.add_argument("--checkpoint_every", type=int,   default=5)
+    parser.add_argument("--device",           type=str,   default="cuda")
+
+    # Loss weights
+    parser.add_argument("--vel_lam", type=float, default=0.5)
+    parser.add_argument("--acc_lam", type=float, default=0.1)
+
+    args = parser.parse_args()
+
+    train(
+        model_type     = args.model,
+        audio_type     = args.audio,
+        d_model        = args.d_model,
+        use_phonemes   = not args.no_phonemes,
+        data_root      = args.data_root,
+        results_root   = args.results_root,
+        hubert_dir     = args.hubert_dir,
+        speakers       = args.speakers,
+        load_synth     = args.use_synthetic,
+        augment        = not args.no_augment,
+        epochs         = args.epochs,
+        batch_size     = args.batch_size,
+        lr             = args.lr,
+        weight_decay   = args.weight_decay,
+        patience       = args.patience,
+        ckpt_every     = args.checkpoint_every,
+        device         = args.device,
+        vel_lam        = args.vel_lam,
+        acc_lam        = args.acc_lam,
+        display_inline = False,
+    )
+
+
+if __name__ == "__main__":
+    main()
