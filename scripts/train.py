@@ -164,7 +164,10 @@ def train(
         device = "cpu"
     print(f"[Train] Device: {device}")
 
-    # Dataset 
+    print(f"[Train] Data root  : {data_root}")
+    print(f"[Train] Speakers   : {speakers}")
+
+    # Dataset
     ds = BlendshapeDataset(
         data_root        = data_root,
         speakers         = speakers,
@@ -174,8 +177,15 @@ def train(
         hubert_dir       = hubert_dir,
     )
 
+    if len(ds) == 0:
+        raise RuntimeError(
+            f"[Train] Dataset is empty. "
+            f"Check that data exists at: {data_root}\n"
+            f"Expected structure: {data_root}/spk08_blendshapes/renamed_spk08/*.csv + *.wav"
+        )
+
     n_val   = max(1, int(len(ds) * val_split))
-    n_train = len(ds) - n_val
+    n_train = max(1, len(ds) - n_val)
     train_ds, val_ds = random_split(
         ds, [n_train, n_val],
         generator=torch.Generator().manual_seed(42),
