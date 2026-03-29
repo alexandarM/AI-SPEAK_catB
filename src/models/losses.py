@@ -9,7 +9,7 @@ def build_weights(device, mouth_w=5.0, jaw_tongue_w=4.0):
     return w
 
 def combined_loss(pred, target, mask, mouth_w=5.0, jaw_w=4.0,
-                  vel_lam=2.0, acc_lam=0.5):
+                  vel_lam=0.5, acc_lam=0.1):
     w = build_weights(pred.device, mouth_w, jaw_w) # shape (52, )
     # mask - True (real) False (synth)
     L_mse = (((pred - target)**2) * w)[mask].mean()
