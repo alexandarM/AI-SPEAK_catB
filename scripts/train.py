@@ -31,6 +31,7 @@ import os
 import sys
 import argparse
 import torch
+from tqdm import tqdm
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
@@ -78,8 +79,9 @@ def _run_epoch(model, loader, optimizer, device, audio_type, is_train,
 
     ctx = torch.enable_grad() if is_train else torch.no_grad()
 
+    phase = "train" if is_train else "val"
     with ctx:
-        for batch in loader:
+        for batch in tqdm(loader, desc=phase, leave=False):
             af      = batch["audio_feats"].to(device)   # (B, T, FEAT_DIM)
             pi      = batch["phoneme_ids"].to(device)    # (B, T)
             pt      = batch["phoneme_trel"].to(device)   # (B, T, 1)
