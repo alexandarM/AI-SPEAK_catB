@@ -187,9 +187,9 @@ def train(
     collate = collate_fn_hubert if audio_type == "hubert" else collate_fn_mfcc
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
-                              collate_fn=collate, num_workers=2, pin_memory=True)
+                              collate_fn=collate, num_workers=0, pin_memory=True)
     val_loader   = DataLoader(val_ds, batch_size=batch_size, shuffle=False,
-                              collate_fn=collate, num_workers=2, pin_memory=True)
+                              collate_fn=collate, num_workers=0, pin_memory=True)
 
     print(f"[Train] Train: {n_train}  Val: {n_val}  Batch: {batch_size}")
 
