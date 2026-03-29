@@ -28,8 +28,11 @@ Training loop za BlendshapeGRU / BlendshapeTCN / BlendshapeTransformer.
 """
 
 import os
+import sys
 import argparse
 import torch
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 from torch.utils.data import DataLoader, random_split
 
