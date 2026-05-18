@@ -28,6 +28,7 @@ Training loop za BlendshapeGRU / BlendshapeTCN / BlendshapeTransformer.
 """
 
 import os
+import time
 import torch
 import numpy as np
 from torch.utils.data import DataLoader, random_split
@@ -140,6 +141,7 @@ def train(
     results_root: str   = "/content/results",
     ckpt_every:   int   = 5,           # cuva checkpoint svakih N epoha
     display_inline: bool = True,
+    **model_kwargs,
 ) -> str:
     """
     Trenira model i cuva rezultate u /content/results/<model>_<timestamp>/.
@@ -191,6 +193,7 @@ def train(
         device       = device,
         d_model      = d_model,
         use_phonemes = use_phonemes,
+        **model_kwargs,
     )
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
@@ -225,10 +228,11 @@ def train(
         "n_params":     model.count_params(),
     })
 
-    # Training loop 
+    # Training loop
     best_val_loss  = float("inf")
     best_ckpt_path = None
     patience_count = 0
+    train_start    = time.time()
 
     for epoch in range(1, epochs + 1):
 
@@ -238,11 +242,13 @@ def train(
         scheduler.step(val_metrics["loss"])
         rm.log_epoch(epoch, train=train_metrics, val=val_metrics)
 
+        elapsed = time.time() - train_start
         print(
             f"Epoha {epoch:3d}/{epochs}  "
             f"train_loss={train_metrics['loss']:.4f}  "
             f"val_loss={val_metrics['loss']:.4f}  "
-            f"val_mse={val_metrics['mse']:.4f}"
+            f"val_mse={val_metrics['mse']:.4f}  "
+            f"[{elapsed/60:.1f}min]"
         )
 
         # Checkpoint svake N epoha
@@ -318,18 +324,25 @@ def train(
     except Exception as e:
         print(f"[Train] Vizualizacija preskocena: {e}")
 
+    total_time = time.time() - train_start
+    hours, rem = divmod(int(total_time), 3600)
+    minutes, seconds = divmod(rem, 60)
+
     rm.save_summary({
-        "best_val_loss":  best_val_loss,
-        "best_ckpt":      best_ckpt_path,
-        "total_epochs":   epoch,
-        "model_type":     model_type,
-        "audio_type":     audio_type,
-        "n_params":       model.count_params(),
+        "best_val_loss":    best_val_loss,
+        "best_ckpt":        best_ckpt_path,
+        "total_epochs":     epoch,
+        "model_type":       model_type,
+        "audio_type":       audio_type,
+        "n_params":         model.count_params(),
+        "training_time_s":  int(total_time),
+        "training_time":    f"{hours:02d}:{minutes:02d}:{seconds:02d}",
     })
 
     session_path = rm.finalize()
-    print(f"\n[Train] Best val_loss : {best_val_loss:.4f}")
-    print(f"[Train] Best ckpt     : {best_ckpt_path}")
-    print(f"[Train] Rezultati     : {session_path}")
+    print(f"\n[Train] Best val_loss   : {best_val_loss:.4f}")
+    print(f"[Train] Best ckpt       : {best_ckpt_path}")
+    print(f"[Train] Training time   : {hours:02d}:{minutes:02d}:{seconds:02d}")
+    print(f"[Train] Rezultati       : {session_path}")
 
     return session_path
